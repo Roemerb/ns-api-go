@@ -33,6 +33,7 @@ type NS struct {
 	// Services
 	TravelOptions *TravelOptionServiceImpl
 	Stations      *StationServiceImpl
+	Journeys      *JourneyServiceImpl
 }
 
 // APIResponse is a response from the API
@@ -67,6 +68,7 @@ func Init(username string, password string) *NS {
 	}
 	ns.TravelOptions = &TravelOptionServiceImpl{ns: ns}
 	ns.Stations = &StationServiceImpl{ns: ns}
+	ns.Journeys = &JourneyServiceImpl{ns: ns}
 
 	return ns
 }

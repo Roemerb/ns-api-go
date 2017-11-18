@@ -10,7 +10,7 @@ import (
 // TravelOptionEndpoint is the endpoint for the travel options API
 const TravelOptionEndpoint = "ns-api-treinplanner"
 
-// TravelOptionResponse is the response format from the NS API
+// TravelOptions is the response format from the NS API
 type TravelOptions struct {
 	XMLName xml.Name       `xml:"NS"`
 	Options []TravelOption `xml:"ReisMogelijkheden>ReisMogelijkheid"`
