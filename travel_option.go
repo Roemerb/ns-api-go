@@ -11,7 +11,7 @@ import (
 const TravelOptionEndpoint = "ns-api-treinplanner"
 
 // TravelOptionResponse is the response format from the NS API
-type TravelOptionResponse struct {
+type TravelOptions struct {
 	XMLName xml.Name       `xml:"NS"`
 	Options []TravelOption `xml:"ReisMogelijkheden>ReisMogelijkheid"`
 }
@@ -47,7 +47,7 @@ type TravelOptionsRequest struct {
 
 // TravelOptionService describes the methods for the TravelOptionsService
 type TravelOptionService interface {
-	Get(ctx context.Context) (TravelOptionResponse, APIResponse, error)
+	Get(ctx context.Context) (TravelOptions, APIResponse, error)
 }
 
 // TravelOptionServiceImpl implements the TravelOptionsService
@@ -56,35 +56,48 @@ type TravelOptionServiceImpl struct {
 }
 
 // Get will execute a TravelOptionsRequest
-func (tos *TravelOptionServiceImpl) Get(ctx context.Context, req *TravelOptionsRequest) (TravelOptionResponse, APIResponse, error) {
+func (tos *TravelOptionServiceImpl) Get(ctx context.Context, req *TravelOptionsRequest) (TravelOptions, APIResponse, error) {
 	var apiResponse APIResponse
 
-	res, err := tos.ns.DoRequest(ctx, TravelOptionEndpoint, req)
+	res, err := tos.ns.DoRequest(ctx, TravelOptionEndpoint, req, true)
 	defer res.Body.Close()
 	if err != nil {
 		apiResponse.Success = false
-		return TravelOptionResponse{}, apiResponse, err
+		return TravelOptions{}, apiResponse, err
 	}
 
 	buff, ioerr := ioutil.ReadAll(res.Body)
 	if ioerr != nil {
 		apiResponse.Success = false
-		return TravelOptionResponse{}, apiResponse, ioerr
+		return TravelOptions{}, apiResponse, ioerr
 	}
 	responseString := string(buff)
 	responseString = "<NS>" + responseString + "</NS>"
-	var target TravelOptionResponse
+	var target TravelOptions
 	var apiErr APIError
 	err = xml.Unmarshal([]byte(responseString), &target)
 	if err != nil {
 		xml.Unmarshal([]byte(responseString), &apiErr)
 		apiResponse.Result = &apiErr
 		apiResponse.Success = false
-		return TravelOptionResponse{}, apiResponse, err
+		return TravelOptions{}, apiResponse, err
 	}
 	apiResponse.Success = true
 	apiResponse.Response = res
 	apiResponse.Result = &target
 
 	return target, apiResponse, nil
+}
+
+// GetDelayInMinutes calculates the total delay in minutes of all the stops
+func (option TravelOption) GetDelayInMinutes() int {
+	delay := 0
+
+	for _, part := range option.JourneyParts {
+		for _, stop := range part.JourneyStops {
+			delay = delay + stop.GetDelayInMinutes()
+		}
+	}
+
+	return delay
 }

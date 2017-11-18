@@ -32,6 +32,7 @@ type NS struct {
 
 	// Services
 	TravelOptions *TravelOptionServiceImpl
+	Stations      *StationServiceImpl
 }
 
 // APIResponse is a response from the API
@@ -65,12 +66,13 @@ func Init(username string, password string) *NS {
 		Password: password,
 	}
 	ns.TravelOptions = &TravelOptionServiceImpl{ns: ns}
+	ns.Stations = &StationServiceImpl{ns: ns}
 
 	return ns
 }
 
 // DoRequest will format and execute the
-func (ns *NS) DoRequest(ctx context.Context, path string, query interface{}) (*http.Response, error) {
+func (ns *NS) DoRequest(ctx context.Context, path string, query interface{}, auth bool) (*http.Response, error) {
 	url, err := buildURL(path, query)
 	if err != nil {
 		return nil, err
@@ -80,7 +82,9 @@ func (ns *NS) DoRequest(ctx context.Context, path string, query interface{}) (*h
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	req.SetBasicAuth(ns.Username, ns.Password)
+	if auth {
+		req.SetBasicAuth(ns.Username, ns.Password)
+	}
 	req.Header.Add("User-Agent", UserAgent)
 
 	res, err := ns.client.Do(req)
@@ -88,16 +92,17 @@ func (ns *NS) DoRequest(ctx context.Context, path string, query interface{}) (*h
 }
 
 func buildURL(path string, query interface{}) (*url.URL, error) {
-	q, err := queryUtils.Values(query)
-	if err != nil {
-		return nil, err
-	}
+	var url url.URL
+	url.Scheme = HTTPScheme
+	url.Host = Host
+	url.Path = path
 
-	url := url.URL{
-		Scheme:   HTTPScheme,
-		Host:     Host,
-		Path:     path,
-		RawQuery: q.Encode(),
+	if query != nil {
+		q, err := queryUtils.Values(query)
+		if err != nil {
+			return nil, err
+		}
+		url.RawQuery = q.Encode()
 	}
 
 	return &url, nil

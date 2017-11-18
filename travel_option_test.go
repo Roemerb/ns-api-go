@@ -2,7 +2,6 @@ package ns
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"reflect"
 	"testing"
@@ -27,12 +26,8 @@ func TestBasicTravelOptionsRequest(t *testing.T) {
 	}
 	options, res, err := ns.TravelOptions.Get(ctx, req)
 
-	for _, option := range options.Options {
-		fmt.Println(option.Status)
-	}
-
 	expect(t, err, nil)
 	expect(t, res.Response.StatusCode, http.StatusOK)
-	expect(t, reflect.TypeOf(options), reflect.TypeOf(TravelOptionResponse{}))
+	expect(t, reflect.TypeOf(options), reflect.TypeOf(TravelOptions{}))
 	expect(t, res.Success, true)
 }
