@@ -3,7 +3,6 @@ package ns
 import (
 	"context"
 	"encoding/xml"
-	"io/ioutil"
 )
 
 // CurrentJourneysEndpoint is the endpoint for the departures API
@@ -56,33 +55,19 @@ func (jsi *JourneyServiceImpl) GetForStationCode(ctx context.Context, code strin
 
 func (jsi JourneyServiceImpl) get(ctx context.Context, request interface{}) (Journeys, APIResponse, error) {
 	var apiResponse APIResponse
+	var journeys Journeys
 
 	res, err := jsi.ns.DoRequest(ctx, CurrentJourneysEndpoint, request, true)
-	defer res.Body.Close()
-	if err != nil {
-		apiResponse.Success = false
-		return Journeys{}, apiResponse, err
-	}
-
-	buff, ioerr := ioutil.ReadAll(res.Body)
-	if ioerr != nil {
-		apiResponse.Success = false
-		return Journeys{}, apiResponse, ioerr
-	}
-	responseString := string(buff)
-	responseString = "<NS>" + responseString + "</NS>"
-	var target Journeys
-	var apiErr APIError
-	err = xml.Unmarshal([]byte(responseString), &target)
-	if err != nil {
-		xml.Unmarshal([]byte(responseString), &apiErr)
-		apiResponse.Result = &apiErr
-		apiResponse.Success = false
-		return Journeys{}, apiResponse, err
-	}
-	apiResponse.Success = true
 	apiResponse.Response = res
-	apiResponse.Result = &target
+	if err != nil {
+		return Journeys{}, apiResponse, err
+	}
+	err = jsi.ns.ParseResponse(res, &journeys, true)
+	if err != nil {
+		return Journeys{}, apiResponse, err
+	}
 
-	return target, apiResponse, nil
+	apiResponse.Result = &journeys
+	apiResponse.Success = true
+	return journeys, apiResponse, nil
 }

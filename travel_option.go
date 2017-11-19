@@ -3,7 +3,6 @@ package ns
 import (
 	"context"
 	"encoding/xml"
-	"io/ioutil"
 	"time"
 )
 
@@ -34,15 +33,15 @@ type TravelOption struct {
 
 // TravelOptionsRequest is the format of a request for travel options
 type TravelOptionsRequest struct {
-	From                string    `url:"fromStation"`
-	To                  string    `url:"toStation"`
-	Via                 string    `url:"viaStation"`
-	NextAdvices         int       `url:"nextAdvices"`
-	PreviousAdvices     int       `url:"previousAdvices"`
-	DateTime            time.Time `url:"dateTime"`
-	DateTimeIsDeparture bool      `url:"Departure"`
-	HSLAllowed          bool      `url:"hslAllowed"`
-	HasYearCard         bool      `url:"yearCard"`
+	From              string    `url:"fromStation"`
+	To                string    `url:"toStation"`
+	Via               string    `url:"viaStation"`
+	NextAdvices       int       `url:"nextAdvices"`
+	PreviousAdvices   int       `url:"previousAdvices"`
+	DateTime          time.Time `url:"dateTime"`
+	DateTimeIsArrival bool      `url:"Departure"`
+	HSLAllowed        bool      `url:"hslAllowed"`
+	HasYearCard       bool      `url:"yearCard"`
 }
 
 // TravelOptionService describes the methods for the TravelOptionsService
@@ -58,35 +57,21 @@ type TravelOptionServiceImpl struct {
 // Get will execute a TravelOptionsRequest
 func (tos *TravelOptionServiceImpl) Get(ctx context.Context, req *TravelOptionsRequest) (TravelOptions, APIResponse, error) {
 	var apiResponse APIResponse
+	var options TravelOptions
 
 	res, err := tos.ns.DoRequest(ctx, TravelOptionEndpoint, req, true)
-	defer res.Body.Close()
-	if err != nil {
-		apiResponse.Success = false
-		return TravelOptions{}, apiResponse, err
-	}
-
-	buff, ioerr := ioutil.ReadAll(res.Body)
-	if ioerr != nil {
-		apiResponse.Success = false
-		return TravelOptions{}, apiResponse, ioerr
-	}
-	responseString := string(buff)
-	responseString = "<NS>" + responseString + "</NS>"
-	var target TravelOptions
-	var apiErr APIError
-	err = xml.Unmarshal([]byte(responseString), &target)
-	if err != nil {
-		xml.Unmarshal([]byte(responseString), &apiErr)
-		apiResponse.Result = &apiErr
-		apiResponse.Success = false
-		return TravelOptions{}, apiResponse, err
-	}
-	apiResponse.Success = true
 	apiResponse.Response = res
-	apiResponse.Result = &target
+	if err != nil {
+		return options, apiResponse, err
+	}
+	err = tos.ns.ParseResponse(res, &options, true)
+	if err != nil {
+		return options, apiResponse, err
+	}
 
-	return target, apiResponse, nil
+	apiResponse.Result = &options
+	apiResponse.Success = true
+	return options, apiResponse, nil
 }
 
 // GetDelayInMinutes calculates the total delay in minutes of all the stops

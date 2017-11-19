@@ -3,7 +3,6 @@ package ns
 import (
 	"context"
 	"encoding/xml"
-	"io/ioutil"
 )
 
 // StationEndpoint is the endpoint of the station v2 API
@@ -49,33 +48,19 @@ type StationServiceImpl struct {
 // Get uses the stations v2 API to fetch all available stations
 func (service StationServiceImpl) Get(ctx context.Context) (Stations, APIResponse, error) {
 	var apiResponse APIResponse
+	var stations Stations
 
 	res, err := service.ns.DoRequest(ctx, StationEndpoint, nil, true)
-	defer res.Body.Close()
-	if err != nil {
-		apiResponse.Success = false
-		return Stations{}, apiResponse, err
-	}
-
-	buff, ioerr := ioutil.ReadAll(res.Body)
-	if ioerr != nil {
-		apiResponse.Success = false
-		return Stations{}, apiResponse, ioerr
-	}
-	responseString := string(buff)
-	responseString = "<NS>" + responseString + "</NS>"
-	var target Stations
-	var apiErr APIError
-	err = xml.Unmarshal([]byte(responseString), &target)
-	if err != nil {
-		xml.Unmarshal([]byte(responseString), &apiErr)
-		apiResponse.Result = &apiErr
-		apiResponse.Success = false
-		return Stations{}, apiResponse, err
-	}
-	apiResponse.Success = true
 	apiResponse.Response = res
-	apiResponse.Result = &target
+	if err != nil {
+		return stations, apiResponse, err
+	}
+	err = service.ns.ParseResponse(res, &stations, true)
+	if err != nil {
+		return stations, apiResponse, err
+	}
 
-	return target, apiResponse, nil
+	apiResponse.Result = &stations
+	apiResponse.Success = true
+	return stations, apiResponse, nil
 }

@@ -3,6 +3,7 @@ package ns
 import (
 	"context"
 	"encoding/xml"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 
@@ -91,6 +92,39 @@ func (ns *NS) DoRequest(ctx context.Context, path string, query interface{}, aut
 
 	res, err := ns.client.Do(req)
 	return res, nil
+}
+
+// ParseResponse will unmarshall the response XML to an interface
+func (ns *NS) ParseResponse(response *http.Response, target interface{}, isCollection bool) error {
+	responseString, err := ns.getResponseString(response)
+	if err != nil {
+		return err
+	}
+	if isCollection {
+		responseString = "<NS>" + responseString + "</NS>"
+	}
+	err = xml.Unmarshal([]byte(responseString), target)
+	if err != nil {
+		var apiErr APIError
+		err = xml.Unmarshal([]byte(responseString), &apiErr)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	return nil
+}
+
+func (ns *NS) getResponseString(rawRes *http.Response) (string, error) {
+	buff, ioerr := ioutil.ReadAll(rawRes.Body)
+	defer rawRes.Body.Close()
+	if ioerr != nil {
+		return "", ioerr
+	}
+
+	return string(buff), nil
 }
 
 func buildURL(path string, query interface{}) (*url.URL, error) {
