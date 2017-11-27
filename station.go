@@ -3,6 +3,7 @@ package ns
 import (
 	"context"
 	"encoding/xml"
+	"strings"
 )
 
 // StationEndpoint is the endpoint of the station v2 API
@@ -22,7 +23,7 @@ type Station struct {
 		Short  string `xml:"Kort"`
 		Middle string `xml:"Middel"`
 		Long   string `xml:"Lang"`
-	}
+	} `xml:"Namen"`
 	Country  string           `xml:"Land"`
 	UICCode  int              `xml:"UICCode"`
 	Lat      float64          `xml:"Lat"`
@@ -63,4 +64,16 @@ func (service StationServiceImpl) Get(ctx context.Context) (Stations, APIRespons
 	apiResponse.Result = &stations
 	apiResponse.Success = true
 	return stations, apiResponse, nil
+}
+
+// GetStationByCode will check if a station with code exists and return is
+func (stations Stations) GetStationByCode(code string) Station {
+	var theStation Station
+	for _, station := range stations.Stations {
+		if strings.ToUpper(station.Code) == strings.ToUpper(code) {
+			theStation = station
+		}
+	}
+
+	return theStation
 }
