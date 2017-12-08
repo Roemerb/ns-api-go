@@ -1,4 +1,4 @@
-# NS Go API Library [![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/roemerb/ns-api-go)
+# NS Go API Library [![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/roemerb/ns-api-go)[![Go Report Card](https://goreportcard.com/badge/github.com/roemerb/ns-api-go)](https://goreportcard.com/report/github.com/roemerb/ns-api-go)
 
 ## Summary
 
